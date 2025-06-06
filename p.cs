@@ -19,7 +19,6 @@ static class P
     internal static extern bool DestroyIcon(IntPtr handle);
 
     private static NotifyIcon icon;
-    private static readonly int[] sizes = new int[] { 16, 32, 48, 64, 128, 256, 512 };
     private static int currentWeek;
     private static Icon weekIcon;
 
@@ -100,73 +99,62 @@ static class P
         catch { }
     }
 
+    private static readonly int[] sizes = { 16, 32, 48, 64, 128, 256, 512 };
+
     internal static Icon GetIcon(int week)
     {
-        try
+        using (MemoryStream iconStream = new MemoryStream())
+        using (BinaryWriter writer = new BinaryWriter(iconStream))
         {
-            using (MemoryStream iconStream = new MemoryStream())
-            using (BinaryWriter writer = new BinaryWriter(iconStream))
+            writer.Write((ushort)0);
+            writer.Write((ushort)1);
+            writer.Write((ushort)sizes.Length);
+
+            int imageOffset = 6 + (16 * sizes.Length);
+            MemoryStream[] imageStreams = new MemoryStream[sizes.Length];
+
+            for (int i = 0, size; i < sizes.Length; i++)
             {
-                writer.Write((ushort)0);
+                size = sizes[i];
+                imageStreams[i] = new MemoryStream();
+
+                using (Bitmap bmp = new Bitmap(size, size))
+                using (Graphics g = Graphics.FromImage(bmp))
+                {
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+                    g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
+                    g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+
+                    DrawBackground(g, size);
+                    DrawWeekText(g, size, week);
+
+                    bmp.Save(imageStreams[i], ImageFormat.Png);
+                }
+
+                writer.Write((byte)(size >= 256 ? 0 : size));
+                writer.Write((byte)(size >= 256 ? 0 : size));
+                writer.Write((byte)0);
+                writer.Write((byte)0);
                 writer.Write((ushort)1);
-                writer.Write((ushort)sizes.Length);
+                writer.Write((ushort)32);
+                writer.Write((int)imageStreams[i].Length);
+                writer.Write((uint)imageOffset);
 
-                int imageOffset = 6 + (16 * sizes.Length);
-                byte[][] images = new byte[sizes.Length][];
-                int size;
-
-                for (int i = 0; i < sizes.Length; i++)
-                {
-                    size = sizes[i];
-
-                    using (Bitmap bmp = new Bitmap(size, size))
-                    using (Graphics g = Graphics.FromImage(bmp))
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
-                        g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
-                        g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                        g.TextContrast = 1;
-
-                        DrawBackground(g, size);
-                        DrawWeekText(g, size, week);
-
-                        bmp.Save(ms, ImageFormat.Png);
-                        images[i] = ms.ToArray();
-                    }
-                }
-
-                for (int i = 0; i < sizes.Length; i++)
-                {
-                    size = sizes[i];
-                    byte[] data = images[i];
-
-                    writer.Write((byte)(size >= 256 ? 0 : size));
-                    writer.Write((byte)(size >= 256 ? 0 : size));
-                    writer.Write((byte)0);
-                    writer.Write((byte)0);
-                    writer.Write((ushort)1);
-                    writer.Write((ushort)32);
-                    writer.Write(data.Length);
-                    writer.Write((uint)imageOffset);
-                    imageOffset += data.Length;
-                }
-
-                for (int i = 0; i < images.Length; i++)
-                {
-                    writer.Write(images[i]);
-                }
-
-                writer.Flush();
-                iconStream.Position = 0;
-
-                return new Icon(iconStream);
+                imageOffset += (int)imageStreams[i].Length;
             }
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show("Error generating icon: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            throw ex;
+
+            foreach (var stream in imageStreams)
+            {
+                writer.Write(stream.ToArray());
+                stream.Dispose();
+            }
+
+            Array.Clear(imageStreams, 0, imageStreams.Length);
+
+            writer.Flush();
+            iconStream.Position = 0;
+
+            return new Icon(iconStream);
         }
     }
 
