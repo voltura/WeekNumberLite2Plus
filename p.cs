@@ -5,7 +5,6 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
-using System.Linq.Expressions;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
@@ -21,38 +20,36 @@ static class P
     private static NotifyIcon icon;
     private static int currentWeek;
     private static Icon weekIcon;
+    private static readonly Mutex Mutex = new Mutex(true, "A2F14B3D-7C9E-489F-8A76-3E7D925F146C");
 
     [STAThread]
     static void Main()
     {
+        if (!Mutex.WaitOne(TimeSpan.Zero, true))
+        {
+            return;
+        }
+
         Application.SetCompatibleTextRenderingDefault(false);
         Application.EnableVisualStyles();
-
         SetProcessDpiAwarenessContext(new IntPtr(-4));
 
         System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer() { Interval = 10000, Enabled = true };
-        timer.Tick += delegate { UpdateIcon(); };
+        timer.Tick += new EventHandler(TimerTick);
+
         currentWeek = GetWeek();
         weekIcon = GetIcon(currentWeek);
         icon = new NotifyIcon()
         {
             Icon = weekIcon,
             Visible = true,
-            ContextMenu = new ContextMenu(new MenuItem[] {
-                new MenuItem("About", delegate { MessageBox.Show(Application.ProductName); }),
-                new MenuItem("Open web site...", delegate { Process.Start("https://voltura.github.io/WeekNumberLite2Plus"); }),
-                new MenuItem("Save Icon...", delegate {
-                    using (FileStream fs = new FileStream(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "WeekIcon.ico"), FileMode.Create, FileAccess.Write))
-                    {
-                        weekIcon.Save(fs);
-                    }
-                    MessageBox.Show("Icon saved to desktop.", "Saved", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }),
-                new MenuItem("Start with Windows", delegate(object sender, EventArgs e) {
-                        StartWithWindows = !((MenuItem)sender).Checked;
-                        ((MenuItem)sender).Checked = StartWithWindows;
-                    }) { Checked = StartWithWindows },
-                new MenuItem("Exit", delegate { Application.Exit(); })
+            ContextMenu = new ContextMenu(new MenuItem[]
+            {
+            new MenuItem("About", new EventHandler(AboutClick)),
+            new MenuItem("Open web site...", new EventHandler(OpenWebsiteClick)),
+            new MenuItem("Save Icon...", new EventHandler(SaveIconClick)),
+            new MenuItem("Start with Windows", new EventHandler(StartWithWindowsClick)) { Checked = StartWithWindows },
+            new MenuItem("Exit", new EventHandler(ExitClick))
             })
         };
 
@@ -60,17 +57,51 @@ static class P
         Application.Run(new ApplicationContext());
     }
 
+    private static void TimerTick(object sender, EventArgs e) { UpdateIcon(); }
+
+    private static void AboutClick(object sender, EventArgs e) { MessageBox.Show(Application.ProductName); }
+
+    private static void OpenWebsiteClick(object sender, EventArgs e) { Process.Start("https://voltura.github.io/WeekNumberLite2Plus"); }
+
+    private static void SaveIconClick(object sender, EventArgs e)
+    {
+        using (var fs = File.Create(Path.Combine(Environment.GetFolderPath((Environment.SpecialFolder)0x10), "WeekIcon.ico")))
+        {
+            weekIcon.Save(fs);
+        }
+    
+        MessageBox.Show("Icon saved to desktop.", "Saved", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    private static void StartWithWindowsClick(object sender, EventArgs e)
+    {
+        MenuItem menuItem = (MenuItem)sender;
+        StartWithWindows = !menuItem.Checked;
+        menuItem.Checked = StartWithWindows;
+    }
+
+    private static void ExitClick(object sender, EventArgs e)
+    {
+        DestroyIcon(icon.Icon.Handle);
+        icon.Icon.Dispose();
+        icon.Dispose();
+        DestroyIcon(weekIcon.Handle);
+        weekIcon.Dispose();
+        Application.Exit();
+    }
+
     private static int GetWeek()
     {
         DateTime now = DateTime.Now;
-        int week = CultureInfo.CurrentCulture.Calendar.GetWeekOfYear(now, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+        int year = now.Year, week = CultureInfo.CurrentCulture.Calendar.GetWeekOfYear(now, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
 
-        return (week == 53 && !(Pp(now.Year) == 4 || Pp(now.Year - 1) == 3)) ? 1 : week;
+        return (week == 53 && !(Pp(year) == 4 || Pp(year - 1) == 3)) ? 1 : week;
     }
+
 
     private static int Pp(int year)
     {
-        return (int)(year + Math.Floor(year / 4.0) - Math.Floor(year / 100.0) + Math.Floor(year / 400.0)) % 7;
+        return (year + year / 4 - year / 100 + year / 400) % 7;
     }
 
     private static void UpdateIcon()
@@ -78,7 +109,11 @@ static class P
         try
         {
             int week = GetWeek();
-            icon.Text = (Thread.CurrentThread.CurrentUICulture.LCID == 1053 ? "Vecka " : "Week ") + week + "\r\n" + DateTime.Now.ToString("yyyy-MM-dd");
+            DateTime now = DateTime.Now;
+
+            icon.Text = string.Format("{0} {1}\r\n{2}-{3:D2}-{4:D2}",
+                CultureInfo.CurrentUICulture.LCID == 1053 ? "Vecka" : "Week",
+                week, now.Year, now.Month, now.Day);
 
             if (week != currentWeek)
             {
@@ -113,22 +148,23 @@ static class P
             int imageOffset = 54;
             byte[][] images = new byte[3][];
 
-            for (int i = 0, size; i < 3; i++)
+            using (MemoryStream ms = new MemoryStream())
             {
-                size = sizes[i];
-
-                using (Bitmap bmp = new Bitmap(size, size))
-                using (Graphics g = Graphics.FromImage(bmp))
+                for (int i = 0, size; i < 3; i++)
                 {
-                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
-                    g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
-                    g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                    size = sizes[i];
+                    ms.SetLength(0);
 
-                    DrawBackground(g, size);
-                    DrawWeekText(g, size, week);
-
-                    using (MemoryStream ms = new MemoryStream())
+                    using (Bitmap bmp = new Bitmap(size, size))
+                    using (Graphics g = Graphics.FromImage(bmp))
                     {
+                        g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+                        g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
+                        g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+
+                        DrawBackground(g, size);
+                        DrawWeekText(g, size, week);
+
                         bmp.Save(ms, ImageFormat.Png);
                         images[i] = ms.ToArray();
                     }
@@ -153,7 +189,6 @@ static class P
                 writer.Write(images[i]);
             }
 
-            writer.Flush();
             iconStream.Position = 0;
 
             return new Icon(iconStream);
@@ -162,27 +197,29 @@ static class P
 
     private static void DrawBackground(Graphics g, int size)
     {
-        float inset = size * 0.03125f;
+        int inset = size >> 5;
 
         using (SolidBrush bg = new SolidBrush(Color.Black))
         using (SolidBrush fg = new SolidBrush(Color.LightGray))
-        using (Pen border = new Pen(Color.LightGray, inset * 2))
+        using (Pen border = new Pen(Color.LightGray, inset << 1))
         {
             g.FillRectangle(bg, inset, inset, size - inset, size - inset);
-            g.DrawRectangle(border, inset, inset, size - (inset * 2), size - (inset * 2));
-            g.FillRectangle(fg, size * 0.15625f, inset / 2, inset * 3, inset * 5);
-            g.FillRectangle(fg, size * 0.75f, inset / 2, inset * 3, inset * 5);
+            g.DrawRectangle(border, inset, inset, size - (inset << 1), size - (inset << 1));
+            g.FillRectangle(fg, size >> 3, inset >> 1, inset * 3, inset * 5);
+            g.FillRectangle(fg, size - (size >> 2), inset >> 1, inset * 3, inset * 5);
         }
     }
 
     private static void DrawWeekText(Graphics g, int size, int week)
     {
-        float fontSize = size * 0.78125f;
+        int fontSize = (size * 25) >> 5;
 
         using (Font font = new Font(FontFamily.GenericMonospace, fontSize, FontStyle.Bold, GraphicsUnit.Pixel))
         using (Brush brush = new SolidBrush(Color.White))
         {
-            g.DrawString(week.ToString("D2", CultureInfo.InvariantCulture), font, brush, (size > 16 ? -fontSize * 0.12f : -fontSize * 0.07f), (size > 16 ? fontSize * 0.2f : fontSize * 0.08f));
+            float offsetX = (size > 16) ? -fontSize * 0.12f : -fontSize * 0.07f;
+            float offsetY = (size > 16) ? fontSize * 0.2f : fontSize * 0.08f;
+            g.DrawString(week.ToString("D2"), font, brush, offsetX, offsetY);
         }
     }
 
