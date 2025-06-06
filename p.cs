@@ -99,7 +99,7 @@ static class P
         catch { }
     }
 
-    private static readonly int[] sizes = { 16, 32, 48, 64, 128, 256, 512 };
+    private static readonly int[] sizes = { 16, 32, 48 };
 
     internal static Icon GetIcon(int week)
     {
@@ -108,15 +108,14 @@ static class P
         {
             writer.Write((ushort)0);
             writer.Write((ushort)1);
-            writer.Write((ushort)sizes.Length);
+            writer.Write((ushort)3);
 
-            int imageOffset = 6 + (16 * sizes.Length);
-            MemoryStream[] imageStreams = new MemoryStream[sizes.Length];
+            int imageOffset = 54;
+            byte[][] images = new byte[3][];
 
-            for (int i = 0, size; i < sizes.Length; i++)
+            for (int i = 0, size; i < 3; i++)
             {
                 size = sizes[i];
-                imageStreams[i] = new MemoryStream();
 
                 using (Bitmap bmp = new Bitmap(size, size))
                 using (Graphics g = Graphics.FromImage(bmp))
@@ -128,28 +127,31 @@ static class P
                     DrawBackground(g, size);
                     DrawWeekText(g, size, week);
 
-                    bmp.Save(imageStreams[i], ImageFormat.Png);
+                    using (MemoryStream ms = new MemoryStream())
+                    {
+                        bmp.Save(ms, ImageFormat.Png);
+                        images[i] = ms.ToArray();
+                    }
                 }
+            }
 
-                writer.Write((byte)(size >= 256 ? 0 : size));
-                writer.Write((byte)(size >= 256 ? 0 : size));
+            for (int i = 0; i < 3; i++)
+            {
+                writer.Write((byte)sizes[i]);
+                writer.Write((byte)sizes[i]);
                 writer.Write((byte)0);
                 writer.Write((byte)0);
                 writer.Write((ushort)1);
                 writer.Write((ushort)32);
-                writer.Write((int)imageStreams[i].Length);
+                writer.Write(images[i].Length);
                 writer.Write((uint)imageOffset);
-
-                imageOffset += (int)imageStreams[i].Length;
+                imageOffset += images[i].Length;
             }
 
-            foreach (var stream in imageStreams)
+            for (int i = 0; i < images.Length; i++)
             {
-                writer.Write(stream.ToArray());
-                stream.Dispose();
+                writer.Write(images[i]);
             }
-
-            Array.Clear(imageStreams, 0, imageStreams.Length);
 
             writer.Flush();
             iconStream.Position = 0;
