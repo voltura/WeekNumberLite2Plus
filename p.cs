@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
+using System.Linq.Expressions;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
@@ -14,8 +15,13 @@ static class P
     [DllImport("user32.dll")]
     private static extern bool SetProcessDpiAwarenessContext(IntPtr dpiFlag);
 
+    [DllImport("user32.dll")]
+    internal static extern bool DestroyIcon(IntPtr handle);
+
     private static NotifyIcon icon;
-    private static readonly int[] sizes = new int[] { 16, 32, 48, 64, 128, 256 };
+    private static readonly int[] sizes = new int[] { 16, 32, 48, 64, 128, 256, 512 };
+    private static int currentWeek;
+    private static Icon weekIcon;
 
     [STAThread]
     static void Main()
@@ -27,26 +33,21 @@ static class P
 
         System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer() { Interval = 10000, Enabled = true };
         timer.Tick += delegate { UpdateIcon(); };
-
+        currentWeek = GetWeek();
+        weekIcon = GetIcon(currentWeek);
         icon = new NotifyIcon()
         {
+            Icon = weekIcon,
             Visible = true,
             ContextMenu = new ContextMenu(new MenuItem[] {
                 new MenuItem("About", delegate { MessageBox.Show(Application.ProductName); }),
                 new MenuItem("Open web site...", delegate { Process.Start("https://voltura.github.io/WeekNumberLite2Plus"); }),
                 new MenuItem("Save Icon...", delegate {
-                    using (Icon weekIcon = GetIcon(GetWeek()))
+                    using (FileStream fs = new FileStream(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "WeekIcon.ico"), FileMode.Create, FileAccess.Write))
                     {
-                        string path = Path.Combine(
-                            Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
-                            "WeekIcon.ico"
-                        );
-                        using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write))
-                        {
-                            weekIcon.Save(fs);
-                        }
-                        MessageBox.Show("Icon saved to desktop.", "Saved", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        weekIcon.Save(fs);
                     }
+                    MessageBox.Show("Icon saved to desktop.", "Saved", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }),
                 new MenuItem("Start with Windows", delegate(object sender, EventArgs e) {
                         StartWithWindows = !((MenuItem)sender).Checked;
@@ -78,70 +79,94 @@ static class P
         try
         {
             int week = GetWeek();
-            string dateStr = DateTime.Now.ToLongDateString();
             icon.Text = (Thread.CurrentThread.CurrentUICulture.LCID == 1053 ? "Vecka " : "Week ") + week + "\r\n" + DateTime.Now.ToString("yyyy-MM-dd");
-            icon.Icon = GetIcon(week);
+
+            if (week != currentWeek)
+            {
+                Icon prevIcon = icon.Icon;
+
+                weekIcon = GetIcon(week);
+                icon.Icon = weekIcon;
+
+                if (prevIcon != null)
+                {
+                    DestroyIcon(prevIcon.Handle);
+                    prevIcon.Dispose();
+                }
+
+                currentWeek = week;
+            }
         }
         catch { }
     }
 
     internal static Icon GetIcon(int week)
     {
-        using (MemoryStream iconStream = new MemoryStream())
-        using (BinaryWriter writer = new BinaryWriter(iconStream))
+        try
         {
-            writer.Write((ushort)0);
-            writer.Write((ushort)1);
-            writer.Write((ushort)sizes.Length);
-
-            int imageOffset = 6 + (16 * sizes.Length);
-            byte[][] images = new byte[sizes.Length][];
-
-            for (int i = 0; i < sizes.Length; i++)
+            using (MemoryStream iconStream = new MemoryStream())
+            using (BinaryWriter writer = new BinaryWriter(iconStream))
             {
-                int size = sizes[i];
-                using (Bitmap bmp = new Bitmap(size, size))
-                using (Graphics g = Graphics.FromImage(bmp))
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
-                    g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
-                    g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                    g.TextContrast = 1;
-
-                    DrawBackground(g, size);
-                    DrawWeekText(g, size, week);
-
-                    bmp.Save(ms, ImageFormat.Png);
-                    images[i] = ms.ToArray();
-                }
-            }
-
-            for (int i = 0; i < sizes.Length; i++)
-            {
-                int size = sizes[i];
-                byte[] data = images[i];
-
-                writer.Write((byte)(size >= 256 ? 0 : size));
-                writer.Write((byte)(size >= 256 ? 0 : size));
-                writer.Write((byte)0);
-                writer.Write((byte)0);
+                writer.Write((ushort)0);
                 writer.Write((ushort)1);
-                writer.Write((ushort)32);
-                writer.Write(data.Length);
-                writer.Write((uint)imageOffset);
-                imageOffset += data.Length;
+                writer.Write((ushort)sizes.Length);
+
+                int imageOffset = 6 + (16 * sizes.Length);
+                byte[][] images = new byte[sizes.Length][];
+                int size;
+
+                for (int i = 0; i < sizes.Length; i++)
+                {
+                    size = sizes[i];
+
+                    using (Bitmap bmp = new Bitmap(size, size))
+                    using (Graphics g = Graphics.FromImage(bmp))
+                    using (MemoryStream ms = new MemoryStream())
+                    {
+                        g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+                        g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
+                        g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                        g.TextContrast = 1;
+
+                        DrawBackground(g, size);
+                        DrawWeekText(g, size, week);
+
+                        bmp.Save(ms, ImageFormat.Png);
+                        images[i] = ms.ToArray();
+                    }
+                }
+
+                for (int i = 0; i < sizes.Length; i++)
+                {
+                    size = sizes[i];
+                    byte[] data = images[i];
+
+                    writer.Write((byte)(size >= 256 ? 0 : size));
+                    writer.Write((byte)(size >= 256 ? 0 : size));
+                    writer.Write((byte)0);
+                    writer.Write((byte)0);
+                    writer.Write((ushort)1);
+                    writer.Write((ushort)32);
+                    writer.Write(data.Length);
+                    writer.Write((uint)imageOffset);
+                    imageOffset += data.Length;
+                }
+
+                for (int i = 0; i < images.Length; i++)
+                {
+                    writer.Write(images[i]);
+                }
+
+                writer.Flush();
+                iconStream.Position = 0;
+
+                return new Icon(iconStream);
             }
-
-            for (int i = 0; i < images.Length; i++)
-            {
-                writer.Write(images[i]);
-            }
-
-            writer.Flush();
-            iconStream.Position = 0;
-
-            return new Icon(iconStream);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("Error generating icon: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            throw ex;
         }
     }
 
@@ -175,32 +200,25 @@ static class P
     {
         get
         {
-            bool startWithWindows = false;
-
             try
             {
-                startWithWindows = Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run\", Application.ProductName, null) != null;
+                return Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Application.ProductName, null) != null;
             }
-            catch { }
-
-            return startWithWindows;
+            catch { return false; }
         }
         set
         {
             try
             {
-                using (RegistryKey registryKey = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true))
+                using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true))
                 {
                     if (value)
                     {
-                        registryKey.SetValue(Application.ProductName, "\"" + Application.ExecutablePath + "\"");
+                        key.SetValue(Application.ProductName, "\"" + Application.ExecutablePath + "\"");
                     }
                     else
                     {
-                        if (registryKey.GetValue(Application.ProductName) != null)
-                        {
-                            registryKey.DeleteValue(Application.ProductName);
-                        }
+                        key.DeleteValue(Application.ProductName, false);
                     }
                 }
             }
