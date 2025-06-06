@@ -82,11 +82,17 @@ static class P
 
     private static void ExitClick(object sender, EventArgs e)
     {
-        DestroyIcon(icon.Icon.Handle);
-        icon.Icon.Dispose();
-        icon.Dispose();
-        DestroyIcon(weekIcon.Handle);
-        weekIcon.Dispose();
+        if (icon != null)
+        {
+            icon.Visible = false;
+            DestroyIcon(icon.Icon.Handle);
+        }
+
+        if (weekIcon != null)
+        {
+            DestroyIcon(weekIcon.Handle);
+        }
+
         Application.Exit();
     }
 
