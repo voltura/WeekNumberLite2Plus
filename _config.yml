@@ -1,0 +1,6 @@
+remote_theme: pages-themes/midnight@v0.2.0
+plugins:
+- jekyll-remote-theme
+title: WeekNumber Lite 2+
+tagline: Week number in the system tray.
+description: A minimal Windows tray app that displays the current ISO week number in the system tray without clutter. No install required, optional auto-start with Windows.
