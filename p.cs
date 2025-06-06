@@ -2,11 +2,9 @@
 using System;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Windows.Forms;
 
 static class P
@@ -20,7 +18,7 @@ static class P
     private static NotifyIcon icon;
     private static int currentWeek;
     private static Icon weekIcon;
-    private static readonly Mutex Mutex = new Mutex(true, "A2F14B3D-7C9E-489F-8A76-3E7D925F146C");
+    private static readonly System.Threading.Mutex Mutex = new System.Threading.Mutex(true, "A2F14B3D-7C9E-489F-8A76-3E7D925F146C");
 
     [STAThread]
     static void Main()
@@ -45,11 +43,11 @@ static class P
             Visible = true,
             ContextMenu = new ContextMenu(new MenuItem[]
             {
-            new MenuItem("About", new EventHandler(AboutClick)),
-            new MenuItem("Open web site...", new EventHandler(OpenWebsiteClick)),
-            new MenuItem("Save Icon...", new EventHandler(SaveIconClick)),
-            new MenuItem("Start with Windows", new EventHandler(StartWithWindowsClick)) { Checked = StartWithWindows },
-            new MenuItem("Exit", new EventHandler(ExitClick))
+                new MenuItem("About", new EventHandler(AboutClick)),
+                new MenuItem("Open web site...", new EventHandler(OpenWebsiteClick)),
+                new MenuItem("Save Icon...", new EventHandler(SaveIconClick)),
+                new MenuItem("Start with Windows", new EventHandler(StartWithWindowsClick)) { Checked = StartWithWindows },
+                new MenuItem("Exit", new EventHandler(ExitClick))
             })
         };
 
@@ -57,11 +55,20 @@ static class P
         Application.Run(new ApplicationContext());
     }
 
-    private static void TimerTick(object sender, EventArgs e) { UpdateIcon(); }
+    private static void TimerTick(object sender, EventArgs e)
+    {
+        UpdateIcon();
+    }
 
-    private static void AboutClick(object sender, EventArgs e) { MessageBox.Show(Application.ProductName); }
+    private static void AboutClick(object sender, EventArgs e)
+    {
+        MessageBox.Show(string.Format("{0} - v{1}", Application.ProductName, Application.ProductVersion)); 
+    }
 
-    private static void OpenWebsiteClick(object sender, EventArgs e) { Process.Start("https://voltura.github.io/WeekNumberLite2Plus"); }
+    private static void OpenWebsiteClick(object sender, EventArgs e)
+    {
+        Process.Start("https://voltura.github.io/WeekNumberLite2Plus"); 
+    }
 
     private static void SaveIconClick(object sender, EventArgs e)
     {
@@ -99,15 +106,12 @@ static class P
     private static int GetWeek()
     {
         DateTime now = DateTime.Now;
-        int year = now.Year, week = CultureInfo.CurrentCulture.Calendar.GetWeekOfYear(now, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+        int year = now.Year;
+        int week = CultureInfo.CurrentCulture.Calendar.GetWeekOfYear(now, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+        int p1 = (year + year / 4 - year / 100 + year / 400) % 7;
+        int p2 = (year - 1 + (year - 1) / 4 - (year - 1) / 100 + (year - 1) / 400) % 7;
 
-        return (week == 53 && !(Pp(year) == 4 || Pp(year - 1) == 3)) ? 1 : week;
-    }
-
-
-    private static int Pp(int year)
-    {
-        return (year + year / 4 - year / 100 + year / 400) % 7;
+        return (week == 53 && !(p1 == 4 || p2 == 3)) ? 1 : week;
     }
 
     private static void UpdateIcon()
@@ -117,8 +121,7 @@ static class P
             int week = GetWeek();
             DateTime now = DateTime.Now;
 
-            icon.Text = string.Format("{0} {1}\r\n{2}-{3:D2}-{4:D2}",
-                CultureInfo.CurrentUICulture.LCID == 1053 ? "Vecka" : "Week",
+            icon.Text = string.Format("{0} {1}\r\n{2}-{3:D2}-{4:D2}", CultureInfo.CurrentUICulture.LCID == 1053 ? "Vecka" : "Week",
                 week, now.Year, now.Month, now.Day);
 
             if (week != currentWeek)
@@ -128,13 +131,13 @@ static class P
                 weekIcon = GetIcon(week);
                 icon.Icon = weekIcon;
 
+                currentWeek = week;
+
                 if (prevIcon != null)
                 {
                     DestroyIcon(prevIcon.Handle);
                     prevIcon.Dispose();
                 }
-
-                currentWeek = week;
             }
         }
         catch { }
@@ -171,7 +174,7 @@ static class P
                         DrawBackground(g, size);
                         DrawWeekText(g, size, week);
 
-                        bmp.Save(ms, ImageFormat.Png);
+                        bmp.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
                         images[i] = ms.ToArray();
                     }
                 }
@@ -223,9 +226,7 @@ static class P
         using (Font font = new Font(FontFamily.GenericMonospace, fontSize, FontStyle.Bold, GraphicsUnit.Pixel))
         using (Brush brush = new SolidBrush(Color.White))
         {
-            float offsetX = (size > 16) ? -fontSize * 0.12f : -fontSize * 0.07f;
-            float offsetY = (size > 16) ? fontSize * 0.2f : fontSize * 0.08f;
-            g.DrawString(week.ToString("D2"), font, brush, offsetX, offsetY);
+            g.DrawString(week.ToString("D2"), font, brush, (size > 16) ? -fontSize * 0.12f : -fontSize * 0.07f, (size > 16) ? fontSize * 0.2f : fontSize * 0.08f);
         }
     }
 
@@ -237,7 +238,10 @@ static class P
             {
                 return Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", Application.ProductName, null) != null;
             }
-            catch { return false; }
+            catch
+            {
+                return false;
+            }
         }
         set
         {
