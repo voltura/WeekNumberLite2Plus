@@ -24,15 +24,6 @@ The first time you run WeekNumber Lite 2+, Windows may show a SmartScreen warnin
 
 ---
 
-## Donations
-*- WeekNumber Lite 2+ is completely free and open source. Donations are very much appreciated!*
-
-[![Donate](https://img.shields.io/badge/donate_via-paypal_or_card-blue)](https://www.paypal.com/donate?hosted_button_id=7PN65YXN64DBG) __⟵__ _**Press here to donate!**_
-
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/G2G74W5F8) __⟵__ _**Press here to buy me a coffee!**_
-   
----
-
 ## Support and donations
 
 WeekNumber Lite 2+ is free and open source.  
