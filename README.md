@@ -58,7 +58,7 @@ If you find WeekNumber Lite 2+ useful, consider supporting its continued develop
 [![Top Language](https://img.shields.io/github/languages/top/voltura/WeekNumberLite2Plus)]()
 [![Code Size](https://img.shields.io/github/languages/code-size/voltura/WeekNumberLite2Plus)]()
 [![Code Lines](https://img.shields.io/badge/code%20lines-196-blue)]()
-[![EXE KB Size](https://img.shields.io/badge/EXE%20KB%20size-11-blue)]()
+[![EXE Size](https://img.shields.io/badge/EXE%20size-11%20KiB-blue)]()
 ![Last Commit](https://img.shields.io/github/last-commit/voltura/WeekNumberLite2Plus?color=red)
 
 [![Forks](https://img.shields.io/github/forks/voltura/WeekNumberLite2Plus)]()
