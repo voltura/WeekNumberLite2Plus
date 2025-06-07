@@ -50,8 +50,8 @@ static class P
             ContextMenu = new ContextMenu(new MenuItem[]
             {
                 new MenuItem("About", new EventHandler(AboutClick)),
-                new MenuItem("Open web site...", new EventHandler(OpenWebsiteClick)),
-                new MenuItem("Save Icon...", new EventHandler(SaveIconClick)),
+                new MenuItem("Open web site", new EventHandler(OpenWebsiteClick)),
+                new MenuItem("Save Icon", new EventHandler(SaveIconClick)),
                 new MenuItem("Start with Windows", new EventHandler(StartWithWindowsClick)) { Checked = StartWithWindows },
                 new MenuItem("Exit", new EventHandler(ExitClick))
             })
