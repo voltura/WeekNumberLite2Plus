@@ -2,7 +2,7 @@
 
 Minimal Windows tray app that shows the current **ISO week number**.
 
-**⬇ **[**Download Latest Release**](https://github.com/voltura/WeekNumberLite2Plus/releases/latest/download/WeekNumberLite2+.exe)
+⬇ [**Download Latest Release**](https://github.com/voltura/WeekNumberLite2Plus/releases/latest/download/WeekNumberLite2+.exe)
 
 ---
 
