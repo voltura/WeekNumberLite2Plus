@@ -83,7 +83,7 @@ static class P
         {
             weekIcon.Save(fs);
         }
-    
+
         MessageBox.Show("Icon saved to desktop.", "Saved");
     }
 
