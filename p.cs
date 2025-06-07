@@ -68,7 +68,7 @@ static class P
 
     private static void AboutClick(object sender, EventArgs e)
     {
-        MessageBox.Show(AboutText);
+        MessageBox.Show(AboutText, "About");
     }
 
     private static void OpenWebsiteClick(object sender, EventArgs e)
