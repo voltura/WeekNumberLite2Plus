@@ -34,7 +34,7 @@ This happens because the file is unsigned, but it's safe and open source.
 
 ## 🖼 Screenshots
 
-![WeekNumber Lite 2+ Settings](https://github.com/user-attachments/assets/08c2a2c5-d56c-4be2-a9f3-f363d9b40a1b)
+![WeekNumber Lite 2+ Settings](https://github.com/user-attachments/assets/9f685615-cbf9-4d49-8637-f460bbb47993)
 
 ---
 
