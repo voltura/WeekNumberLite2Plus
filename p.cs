@@ -18,7 +18,6 @@ static class P
     static NotifyIcon icon;
     static Icon weekIcon;
     static int currentWeek;
-    static readonly int[] icoSizes = { 16, 32, 48 };
     static readonly System.Threading.Mutex Mutex = new System.Threading.Mutex(true, "A2F14B3D-7C9E-489F-8A76-3E7D925F146C");
     static readonly string TranslatedWeekText = CultureInfo.CurrentUICulture.LCID == 1053 ? "Vecka" : "Week";
 
@@ -53,10 +52,7 @@ static class P
         Application.Run();
     }
 
-    static void UpdateIconTimerTick(object sender, EventArgs e)
-    {
-        UpdateIcon();
-    }
+    static void UpdateIconTimerTick(object sender, EventArgs e) { UpdateIcon(); }
 
     static void AboutClick(object sender, EventArgs e)
     {
@@ -89,8 +85,6 @@ static class P
             DestroyIcon(icon.Icon.Handle);
         }
 
-        Mutex.ReleaseMutex();
-        Mutex.Dispose();
         Application.Exit();
     }
 
@@ -131,16 +125,16 @@ static class P
         {
             writer.Write((ushort)0);
             writer.Write((ushort)1);
-            writer.Write((ushort)3);
+            writer.Write((ushort)2);
 
-            int imageOffset = 54;
-            byte[][] images = new byte[3][];
+            int imageOffset = 38;
+            byte[][] images = new byte[2][];
 
             using (MemoryStream ms = new MemoryStream())
             {
-                for (int i = 0, size; i < 3; i++)
+                for (int i = 0, size; i < 2; i++)
                 {
-                    size = icoSizes[i];
+                    size = (i == 0) ? 16 : 48;
                     ms.SetLength(0);
 
                     using (Bitmap bmp = new Bitmap(size, size))
@@ -172,10 +166,11 @@ static class P
                 }
             }
 
-            for (int i = 0; i < 3; i++)
+            for (int i = 0, size; i < 2; i++)
             {
-                writer.Write((byte)icoSizes[i]);
-                writer.Write((byte)icoSizes[i]);
+                size = (i == 0) ? 16 : 48;
+                writer.Write((byte)size);
+                writer.Write((byte)size);
                 writer.Write((byte)0);
                 writer.Write((byte)0);
                 writer.Write((ushort)1);
@@ -185,7 +180,9 @@ static class P
                 imageOffset += images[i].Length;
             }
 
-            for (int i = 0; i < images.Length; i++) writer.Write(images[i]);
+            for (int i = 0; i < images.Length; i++)
+                writer.Write(images[i]);
+            
             iconStream.Position = 0;
 
             return new Icon(iconStream);
