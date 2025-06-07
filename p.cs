@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
+using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -16,9 +17,11 @@ static class P
     internal static extern bool DestroyIcon(IntPtr handle);
 
     private static NotifyIcon icon;
-    private static int currentWeek;
     private static Icon weekIcon;
+    private static int currentWeek;
     private static readonly System.Threading.Mutex Mutex = new System.Threading.Mutex(true, "A2F14B3D-7C9E-489F-8A76-3E7D925F146C");
+    private static readonly string AboutText = string.Format("{0} - v{1}", Application.ProductName, Application.ProductVersion);
+    private static readonly string TranslatedWeekText = CultureInfo.CurrentUICulture.LCID == 1053 ? "Vecka" : "Week";
 
     [STAThread]
     static void Main()
@@ -27,12 +30,15 @@ static class P
         {
             return;
         }
+        GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+        GCSettings.LatencyMode = GCLatencyMode.Batch;
 
         Application.SetCompatibleTextRenderingDefault(false);
         Application.EnableVisualStyles();
+
         SetProcessDpiAwarenessContext(new IntPtr(-4));
 
-        System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer() { Interval = 10000, Enabled = true };
+        Timer timer = new Timer() { Interval = 1800000, Enabled = true };
         timer.Tick += new EventHandler(TimerTick);
 
         currentWeek = GetWeek();
@@ -62,12 +68,12 @@ static class P
 
     private static void AboutClick(object sender, EventArgs e)
     {
-        MessageBox.Show(string.Format("{0} - v{1}", Application.ProductName, Application.ProductVersion)); 
+        MessageBox.Show(AboutText);
     }
 
     private static void OpenWebsiteClick(object sender, EventArgs e)
     {
-        Process.Start("https://voltura.github.io/WeekNumberLite2Plus"); 
+        Process.Start("https://voltura.github.io/WeekNumberLite2Plus");
     }
 
     private static void SaveIconClick(object sender, EventArgs e)
@@ -95,10 +101,8 @@ static class P
             DestroyIcon(icon.Icon.Handle);
         }
 
-        if (weekIcon != null)
-        {
-            DestroyIcon(weekIcon.Handle);
-        }
+        Mutex.ReleaseMutex();
+        Mutex.Dispose();
 
         Application.Exit();
     }
@@ -121,8 +125,7 @@ static class P
             int week = GetWeek();
             DateTime now = DateTime.Now;
 
-            icon.Text = string.Format("{0} {1}\r\n{2}-{3:D2}-{4:D2}", CultureInfo.CurrentUICulture.LCID == 1053 ? "Vecka" : "Week",
-                week, now.Year, now.Month, now.Day);
+            icon.Text = string.Format("{0} {1}\r\n{2}-{3:D2}-{4:D2}", TranslatedWeekText, week, now.Year, now.Month, now.Day);
 
             if (week != currentWeek)
             {
