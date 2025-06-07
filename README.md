@@ -34,7 +34,10 @@ This happens because the file is unsigned, but it's safe and open source.
 
 ## 🖼 Screenshots
 
-![WeekNumber Lite 2+ Settings](https://github.com/user-attachments/assets/9f685615-cbf9-4d49-8637-f460bbb47993)
+<p>
+  <img src="https://github.com/user-attachments/assets/fe45c950-7f9b-4855-9bcb-d24863a193ed" alt="WeekNumber Lite 2+ Icon and Tooltip" />&nbsp;&nbsp;&nbsp;
+  <img src="https://github.com/user-attachments/assets/9f685615-cbf9-4d49-8637-f460bbb47993" alt="WeekNumber Lite 2+ Settings" />
+</p>
 
 ---
 
