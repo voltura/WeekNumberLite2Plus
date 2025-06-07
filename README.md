@@ -35,8 +35,8 @@ This happens because the file is unsigned, but it's safe and open source.
 ## 🖼 Screenshots
 
 <p>
-  <img src="https://github.com/user-attachments/assets/fe45c950-7f9b-4855-9bcb-d24863a193ed" alt="WeekNumber Lite 2+ Icon and Tooltip" />&nbsp;&nbsp;&nbsp;
-  <img src="https://github.com/user-attachments/assets/b213bd58-da32-4131-ae0f-d6f3be7a21c1" alt="WeekNumber Lite 2+ Settings" />
+  <img src="https://github.com/user-attachments/assets/488701db-57ac-4de5-8314-c117660f4016" alt="WeekNumber Lite 2+ Icon and Tooltip" />&nbsp;&nbsp;&nbsp;
+  <img src="https://github.com/user-attachments/assets/70ed7199-7397-46e8-a9c2-f5c1939b78d3" alt="WeekNumber Lite 2+ Settings" />
 </p>
 
 ---
