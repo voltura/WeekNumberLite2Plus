@@ -30,6 +30,7 @@ static class P
         {
             return;
         }
+
         GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
         GCSettings.LatencyMode = GCLatencyMode.Batch;
 
@@ -123,9 +124,7 @@ static class P
         try
         {
             int week = GetWeek();
-            DateTime now = DateTime.Now;
-
-            icon.Text = string.Format("{0} {1}\r\n{2}-{3:D2}-{4:D2}", TranslatedWeekText, week, now.Year, now.Month, now.Day);
+            icon.Text = string.Format("{0} {1}\r\n{2:yyyy-MM-dd}", TranslatedWeekText, week, DateTime.Now);
 
             if (week != currentWeek)
             {
@@ -146,7 +145,7 @@ static class P
         catch { }
     }
 
-    private static readonly int[] sizes = { 16, 32, 48 };
+    private static readonly int[] icoSizes = { 16, 32, 48 };
 
     internal static Icon GetIcon(int week)
     {
@@ -164,18 +163,34 @@ static class P
             {
                 for (int i = 0, size; i < 3; i++)
                 {
-                    size = sizes[i];
+                    size = icoSizes[i];
                     ms.SetLength(0);
 
                     using (Bitmap bmp = new Bitmap(size, size))
                     using (Graphics g = Graphics.FromImage(bmp))
                     {
-                        g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
-                        g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
-                        g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                        int inset = Math.Max(1, size / 16);
+                        int fontSize = (size * 25) >> 5;
 
-                        DrawBackground(g, size);
-                        DrawWeekText(g, size, week);
+                        using (SolidBrush bg = new SolidBrush(Color.Black))
+                        using (SolidBrush fg = new SolidBrush(Color.White))
+                        using (Pen border = new Pen(Color.LightGray, size == 16 ? 0.1f : 0.2f))
+                        using (Font font = new Font(FontFamily.GenericMonospace, fontSize, (FontStyle)4, GraphicsUnit.Pixel))
+                        {
+                            g.FillRectangle(bg, inset, inset, size - inset * 2, size - inset * 2);
+                            Rectangle rect = new Rectangle(inset, inset, size - inset * 2 - 1, size - inset * 2 - 1);
+                            g.DrawRectangle(border, rect);
+
+                            int tabWidth = Math.Max(1, size / 10);
+                            int tabHeight = Math.Max(1, size / 4) - 2;
+                            int tabTop = inset >> 1;
+                            int tabSpacing = Math.Max(2, (size - (2 * tabWidth)) / 5);
+
+                            g.FillRectangle(fg, tabSpacing + 1, tabTop, tabWidth, tabHeight);
+                            g.FillRectangle(fg, size - tabSpacing - tabWidth - 1, tabTop, tabWidth, tabHeight);
+
+                            g.DrawString(week.ToString("D2"), font, fg, (size > 16) ? -fontSize * 0.12f : -fontSize * 0.07f, (size > 16) ? fontSize * 0.2f : fontSize * 0.08f);
+                        }
 
                         bmp.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
                         images[i] = ms.ToArray();
@@ -185,8 +200,8 @@ static class P
 
             for (int i = 0; i < 3; i++)
             {
-                writer.Write((byte)sizes[i]);
-                writer.Write((byte)sizes[i]);
+                writer.Write((byte)icoSizes[i]);
+                writer.Write((byte)icoSizes[i]);
                 writer.Write((byte)0);
                 writer.Write((byte)0);
                 writer.Write((ushort)1);
@@ -204,32 +219,6 @@ static class P
             iconStream.Position = 0;
 
             return new Icon(iconStream);
-        }
-    }
-
-    private static void DrawBackground(Graphics g, int size)
-    {
-        int inset = size >> 5;
-
-        using (SolidBrush bg = new SolidBrush(Color.Black))
-        using (SolidBrush fg = new SolidBrush(Color.LightGray))
-        using (Pen border = new Pen(Color.LightGray, inset << 1))
-        {
-            g.FillRectangle(bg, inset, inset, size - inset, size - inset);
-            g.DrawRectangle(border, inset, inset, size - (inset << 1), size - (inset << 1));
-            g.FillRectangle(fg, size >> 3, inset >> 1, inset * 3, inset * 5);
-            g.FillRectangle(fg, size - (size >> 2), inset >> 1, inset * 3, inset * 5);
-        }
-    }
-
-    private static void DrawWeekText(Graphics g, int size, int week)
-    {
-        int fontSize = (size * 25) >> 5;
-
-        using (Font font = new Font(FontFamily.GenericMonospace, fontSize, FontStyle.Bold, GraphicsUnit.Pixel))
-        using (Brush brush = new SolidBrush(Color.White))
-        {
-            g.DrawString(week.ToString("D2"), font, brush, (size > 16) ? -fontSize * 0.12f : -fontSize * 0.07f, (size > 16) ? fontSize * 0.2f : fontSize * 0.08f);
         }
     }
 
