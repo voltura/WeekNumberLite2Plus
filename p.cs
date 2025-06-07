@@ -16,7 +16,6 @@ static class P
     static extern bool DestroyIcon(IntPtr handle);
 
     static NotifyIcon icon;
-    static Icon weekIcon;
     static int currentWeek;
     static readonly System.Threading.Mutex Mutex = new System.Threading.Mutex(true, "A2F14B3D-7C9E-489F-8A76-3E7D925F146C");
     static readonly string TranslatedWeekText = CultureInfo.CurrentUICulture.LCID == 1053 ? "Vecka" : "Week";
@@ -36,14 +35,12 @@ static class P
 
         icon = new NotifyIcon()
         {
-            Icon = weekIcon = GetIcon(currentWeek = GetWeek()),
+            Icon = GetIcon(currentWeek = GetWeek()),
             Text = string.Format("{0} {1}\r\n{2:yyyy-MM-dd}", TranslatedWeekText, currentWeek, DateTime.Now),
             Visible = true,
             ContextMenu = new ContextMenu(new MenuItem[]
             {
                 new MenuItem("About", AboutClick),
-                new MenuItem("Open web site", OpenWebsiteClick),
-                new MenuItem("Save Icon", SaveIconClick),
                 new MenuItem("Start with Windows", StartWithWindowsClick) { Checked = StartWithWindows },
                 new MenuItem("Exit", ExitClick)
             })
@@ -56,19 +53,8 @@ static class P
 
     static void AboutClick(object sender, EventArgs e)
     {
-        MessageBox.Show(string.Format("{0} - v{1}", Application.ProductName, Application.ProductVersion), "About");
-    }
-
-    static void OpenWebsiteClick(object sender, EventArgs e)
-    {
-        System.Diagnostics.Process.Start("https://voltura.github.io/WeekNumberLite2Plus");
-    }
-
-    static void SaveIconClick(object sender, EventArgs e)
-    {
-        using (var fs = File.Create(Path.Combine(Environment.GetFolderPath((Environment.SpecialFolder)0x10), "WeekIcon.ico")))
-            weekIcon.Save(fs);
-        MessageBox.Show("Icon saved to desktop.", "Saved");
+        if (DialogResult.Yes == MessageBox.Show(string.Format("{0} - v{1}\n\nGo to web site?", Application.ProductName, Application.ProductVersion), "About", MessageBoxButtons.YesNo))
+            System.Diagnostics.Process.Start("https://voltura.github.io/WeekNumberLite2Plus");
     }
 
     static void StartWithWindowsClick(object sender, EventArgs e)
@@ -107,7 +93,7 @@ static class P
         {
             Icon prevIcon = icon.Icon;
 
-            icon.Icon = weekIcon = GetIcon(week);
+            icon.Icon = GetIcon(week);
             currentWeek = week;
 
             if (prevIcon != null)
@@ -180,8 +166,7 @@ static class P
                 imageOffset += images[i].Length;
             }
 
-            for (int i = 0; i < images.Length; i++)
-                writer.Write(images[i]);
+            for (int i = 0; i < images.Length; i++) writer.Write(images[i]);
             
             iconStream.Position = 0;
 
