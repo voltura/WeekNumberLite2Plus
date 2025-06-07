@@ -10,17 +10,17 @@ using System.Windows.Forms;
 static class P
 {
     [DllImport("user32.dll")]
-    private static extern bool SetProcessDpiAwarenessContext(IntPtr dpiFlag);
+    static extern bool SetProcessDpiAwarenessContext(IntPtr dpiFlag);
 
     [DllImport("user32.dll")]
-    internal static extern bool DestroyIcon(IntPtr handle);
+    static extern bool DestroyIcon(IntPtr handle);
 
-    private static NotifyIcon icon;
-    private static Icon weekIcon;
-    private static int currentWeek;
-    private static readonly int[] icoSizes = { 16, 32, 48 };
-    private static readonly System.Threading.Mutex Mutex = new System.Threading.Mutex(true, "A2F14B3D-7C9E-489F-8A76-3E7D925F146C");
-    private static readonly string TranslatedWeekText = CultureInfo.CurrentUICulture.LCID == 1053 ? "Vecka" : "Week";
+    static NotifyIcon icon;
+    static Icon weekIcon;
+    static int currentWeek;
+    static readonly int[] icoSizes = { 16, 32, 48 };
+    static readonly System.Threading.Mutex Mutex = new System.Threading.Mutex(true, "A2F14B3D-7C9E-489F-8A76-3E7D925F146C");
+    static readonly string TranslatedWeekText = CultureInfo.CurrentUICulture.LCID == 1053 ? "Vecka" : "Week";
 
     [STAThread]
     static void Main()
@@ -53,35 +53,35 @@ static class P
         Application.Run();
     }
 
-    private static void UpdateIconTimerTick(object sender, EventArgs e)
+    static void UpdateIconTimerTick(object sender, EventArgs e)
     {
         UpdateIcon();
     }
 
-    private static void AboutClick(object sender, EventArgs e)
+    static void AboutClick(object sender, EventArgs e)
     {
         MessageBox.Show(string.Format("{0} - v{1}", Application.ProductName, Application.ProductVersion), "About");
     }
 
-    private static void OpenWebsiteClick(object sender, EventArgs e)
+    static void OpenWebsiteClick(object sender, EventArgs e)
     {
         System.Diagnostics.Process.Start("https://voltura.github.io/WeekNumberLite2Plus");
     }
 
-    private static void SaveIconClick(object sender, EventArgs e)
+    static void SaveIconClick(object sender, EventArgs e)
     {
         using (var fs = File.Create(Path.Combine(Environment.GetFolderPath((Environment.SpecialFolder)0x10), "WeekIcon.ico")))
             weekIcon.Save(fs);
         MessageBox.Show("Icon saved to desktop.", "Saved");
     }
 
-    private static void StartWithWindowsClick(object sender, EventArgs e)
+    static void StartWithWindowsClick(object sender, EventArgs e)
     {
         MenuItem menuItem = (MenuItem)sender;
         menuItem.Checked = StartWithWindows = !menuItem.Checked;
     }
 
-    private static void ExitClick(object sender, EventArgs e)
+    static void ExitClick(object sender, EventArgs e)
     {
         if (icon != null)
         {
@@ -94,7 +94,7 @@ static class P
         Application.Exit();
     }
 
-    private static int GetWeek()
+    static int GetWeek()
     {
         DateTime now = DateTime.Now;
         int year = now.Year, week = CultureInfo.CurrentCulture.Calendar.GetWeekOfYear(now, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday),
@@ -103,7 +103,7 @@ static class P
         return (week == 53 && !(p1 == 4 || p2 == 3)) ? 1 : week;
     }
 
-    private static void UpdateIcon()
+    static void UpdateIcon()
     {
         int week = GetWeek();
 
@@ -124,7 +124,7 @@ static class P
         }
     }
 
-    internal static Icon GetIcon(int week)
+    static Icon GetIcon(int week)
     {
         using (MemoryStream iconStream = new MemoryStream())
         using (BinaryWriter writer = new BinaryWriter(iconStream))
@@ -192,7 +192,7 @@ static class P
         }
     }
 
-    public static bool StartWithWindows
+    static bool StartWithWindows
     {
         get
         {
