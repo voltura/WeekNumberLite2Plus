@@ -1,8 +1,16 @@
 # WeekNumber Lite 2+
 
+> [!IMPORTANT]
+> **WeekNumber Lite 2+ has been replaced by [Voltura WeekNumber](https://github.com/voltura/voltura-weeknumber).**
+> I will no longer develop this old WeekNumber Lite 2+ app. There will be no further features or bug fixes here; development continues in Voltura WeekNumber.
+>
+> **[Download Voltura WeekNumber for Windows](https://github.com/voltura/voltura-weeknumber/releases/latest)** · [Visit the new project](https://github.com/voltura/voltura-weeknumber)
+
+The documentation below describes the old app and is kept for existing users.
+
 Minimal Windows tray app that shows the current **ISO week number**.
 
-⬇ [**Download Latest Release**](https://github.com/voltura/WeekNumberLite2Plus/releases/latest/download/WeekNumberLite2+.exe)
+⬇ [**Download Voltura WeekNumber**](https://github.com/voltura/voltura-weeknumber/releases/latest)
 
 ---
 
@@ -14,7 +22,11 @@ Minimal Windows tray app that shows the current **ISO week number**.
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Legacy installation
+
+For new installations, use [Voltura WeekNumber](https://github.com/voltura/voltura-weeknumber/releases/latest).
+
+If you still need the old app:
 
 1. Download [`WeekNumberLite2+.exe`](https://github.com/voltura/WeekNumberLite2Plus/releases/latest/download/WeekNumberLite2+.exe)
 2. Run the file — that’s it!
@@ -43,7 +55,7 @@ This happens because the file is unsigned, but it's safe and open source.
 
 ## 💬 Support Development
 
-If you find WeekNumber Lite 2+ useful, consider supporting its continued development:
+If you find these apps useful, consider supporting development of [Voltura WeekNumber](https://github.com/voltura/voltura-weeknumber):
 
 [![Donate](https://img.shields.io/badge/donate_via-paypal_or_card-blue)](https://www.paypal.com/donate?hosted_button_id=7PN65YXN64DBG)  
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/G2G74W5F8)
